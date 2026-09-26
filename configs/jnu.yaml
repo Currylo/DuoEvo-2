@@ -1,0 +1,14 @@
+# Jiangnan University (JNU) bearing data: healthy, inner-race, outer-race and ball faults.
+# Recorded at 50 kHz; resampling to 12 kHz shortens each record, so a smaller stride keeps the
+# window count comparable to the other datasets.
+
+data:
+  dataset: jnu
+  root: data/JNU
+  raw_rate_hz: 50000
+  stride: 256
+  cross_speed: 1000                  # 1000 rpm is held out, never used
+
+mart_loat:                           # selected on seed-11 validation
+  attack_snr_db: 26.0
+  beta: 6.0

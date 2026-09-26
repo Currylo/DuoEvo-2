@@ -1,0 +1,12 @@
+# Case Western Reserve University (CWRU) 12 kHz drive-end data: normal plus inner-race, ball
+# and outer-race faults of 0.007 / 0.014 / 0.021 inch (10 classes).
+
+data:
+  dataset: cwru
+  root: data/CWRU
+  stride: 1024
+  cross_load: 3                      # motor load 3 is held out, never used
+
+mart_loat:                           # selected on seed-11 validation
+  attack_snr_db: 20.0
+  beta: 1.0

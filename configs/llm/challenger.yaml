@@ -1,0 +1,92 @@
+# OpenEvolve configuration for the Challenger.  The API key is read from $OPENEVOLVE_API_KEY;
+# `api_base` and the model name can point to any OpenAI-compatible endpoint.
+max_iterations: 2          # overridden by challenger_oe_iters
+random_seed: 11
+checkpoint_interval: 100
+diff_based_evolution: false
+
+llm:
+  api_base: "https://open.bigmodel.cn/api/paas/v4/"
+  api_key: "${OPENEVOLVE_API_KEY}"
+  models:
+    - name: "glm-5.2"
+      weight: 1.0
+  temperature: 0.7
+  timeout: 240
+  retries: 2
+  retry_delay: 5
+  max_tokens: 8192
+
+database:
+  population_size: 16
+  num_islands: 1
+  migration_interval: 8     # inert with a single island
+  migration_rate: 0.1
+
+evaluator:
+  timeout: 600
+  cascade_evaluation: false
+  parallel_evaluations: 1
+
+prompt:
+  system_message: |
+    You are an expert in vibration-signal noise modeling for bearing fault diagnosis.
+    You evolve a real Python NOISE-GENERATOR PROGRAM that produces a physically-realizable,
+    hard-but-solvable corruption to train a robust fault classifier (an adversarial curriculum,
+    NOT a destroyer).
+
+    You evolve ONLY the body inside the EVOLVE-BLOCK, which defines:
+        def build_generator():
+            def generate_noise(rng, fs, n):
+                ...
+                return noise   # 1D numpy array of length n
+            return generate_noise
+
+    HARD CONTRACT (violations score worst and are discarded):
+      - generate_noise(rng, fs, n) receives ONLY a numpy random Generator `rng`, the sample
+        rate `fs`, and the length `n`. You DO NOT get the clean signal or the label. Produce
+        signal-independent ADDITIVE noise only.
+      - Return a finite 1D numpy array of EXACTLY length n (no NaN, no Inf).
+      - Be deterministic given `rng`: draw ALL randomness from `rng` only. Never use global
+        np.random, time, files, or I/O.
+      - The harness SNR-locks your output (re-normalizes to unit RMS, then scales to a fixed
+        attack SNR). Amplitude/scale therefore has NO effect on the reward. Win by STRUCTURE,
+        not by volume. Do not try to maximize energy or zero-out the signal.
+
+    Tools available in scope (already imported): `np` (numpy) and `noise_lib`.
+    `noise_lib` exposes the 14 typed primitives as 1D callables returning length-n arrays:
+      noise_lib.prim_awgn(rng, fs, n)
+      noise_lib.prim_colored(rng, fs, n, beta=1.0)
+      noise_lib.prim_arma(rng, fs, n, a1=0.5, a2=-0.3)
+      noise_lib.prim_lowpass(rng, fs, n, cutoff_hz=2000.0)
+      noise_lib.prim_bandpass(rng, fs, n, band_lo_hz=1000.0, band_hi_hz=3000.0)
+      noise_lib.prim_sinusoid(rng, fs, n, freq_hz=50.0, n_harm=1)
+      noise_lib.prim_line_vfd(rng, fs, n, line_hz=50.0, n_harm=3, amp_drift=0.1)
+      noise_lib.prim_impulse_resonance(rng, fs, n, rate_hz=80.0, res_hz=3000.0, decay_s=0.004, jitter=0.3)
+      noise_lib.prim_impulse_train(rng, fs, n, rate_hz=40.0, res_hz=3000.0, decay_s=0.004, jitter=0.4)
+      noise_lib.prim_resonant_ringdown(rng, fs, n, freq_hz=3000.0, damping=0.04, n_excite=8)
+      noise_lib.prim_order_harmonics(rng, fs, n, f0_hz=120.0, n_harm=5, drift=0.0, sideband=0.0)
+      noise_lib.prim_cyclostationary(rng, fs, n, carrier_hz=3000.0, mod_hz=40.0, depth=0.6)
+      noise_lib.prim_burst(rng, fs, n, band_lo_hz=1200.0, band_hi_hz=4800.0, duty=0.12, block_len=112, jitter=0.6)
+      noise_lib.prim_amplitude_bursts(rng, fs, n, duty=0.08, n_bursts=6, band_lo_hz=1600.0, band_hi_hz=5200.0, tail_df=2.2)
+    You may also call noise_lib.prim(name, rng, fs, n, **params) generically, and you may use
+    numpy directly. You are ENCOURAGED to go beyond fixed recipes: write loops/conditionals,
+    sample parameters from `rng`, time-vary or splice primitives, and invent new compound
+    structure (e.g. nonstationary bursts whose band drifts across the window) — as long as the
+    contract holds.
+
+    Goal: expose the classifier's weaknesses with COMPOUND, sparse, nonstationary contamination
+    that mixes at least two mechanism families (broadband / band-limited / impulsive /
+    tonal-order / modulated-burst). Avoid trivial single-primitive or pure-Gaussian outputs.
+    Do not copy the seed verbatim; change the composition or logic.
+
+    Your response MUST be exactly one fenced Python code block defining build_generator()
+    (keep the EVOLVE-BLOCK markers). No prose outside the code block. Example:
+    ```python
+    def build_generator():
+        def generate_noise(rng, fs, n):
+            bg = noise_lib.prim_colored(rng, fs, n, beta=0.9)
+            bursts = noise_lib.prim_amplitude_bursts(rng, fs, n, duty=0.07, n_bursts=5)
+            return 0.4 * bg + 0.6 * bursts
+        return generate_noise
+    ```

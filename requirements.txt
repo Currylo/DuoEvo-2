@@ -1,0 +1,8 @@
+# Tested with Python 3.10.  Install the PyTorch build that matches your CUDA version.
+torch==2.7.1
+numpy==1.26.4
+scipy==1.13.1
+PyYAML==6.0.3
+openevolve==0.2.26
+openai==2.26.0
+pytest==9.0.3

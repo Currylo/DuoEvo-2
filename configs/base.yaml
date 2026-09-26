@@ -1,0 +1,71 @@
+# Settings shared by every dataset.  A dataset config (pu.yaml, cwru.yaml, jnu.yaml) adds its
+# `data` block and MART-LOAT hyperparameters; the DuoEvo protocol under `exp` is the same for all.
+
+project:
+  seed: 11                          # overridden by --seed
+
+data:
+  sample_rate_hz: 12000             # every dataset is resampled to 12 kHz
+  window_len: 2048
+  max_windows_per_split: null       # cap for smoke runs only
+
+train:
+  batch_size: 64
+  eval_batch_size: 256
+
+noise:
+  attack_snr_db: -4.0               # SNR at which Challenger programs are scored
+  vedge_per_class: 200              # class-balanced dev windows the Challenger is scored on
+
+curriculum:
+  aug_fraction: 0.35                # noisy copies per round, as a fraction of the training windows
+  aug_snrs_db: [0, -3, -6]
+
+eval:
+  t2_snrs_db: [0, -3, -6]           # T2: 4 held-out noise families x 3 SNRs
+
+exp:
+  rounds: 20                        # macro rounds S(t-1) -> C(t) -> S(t)
+
+  # Each arm = structure policy + curriculum source (see duoevo.arm_spec).
+  arms:
+    DuoEvo:          {structure: patience, patience: 3, max_search_rounds: 8}
+    Evolve-NoStruct: {structure: never}
+    Replay-Anchor:   {structure: never, curriculum: replay, donor: DuoEvo}
+    Random-Noise:    {structure: never, curriculum: random}
+
+  # Challenger and curriculum
+  challenger_oe_iters: 16           # Challenger programs proposed per round
+  archive_materialize_cap: 8        # archive elites materialized into each curriculum
+  curriculum_mix_random_frac: 0.5   # random-DSL share of the augmented windows
+
+  # Weight accumulation: 8 + 20 x 32 = 648 epochs per trajectory
+  boot_epochs: 8
+  continue_epochs: 32
+  confirm_epochs: 104               # from-scratch retraining of shortlisted sources
+
+  # Structure search
+  solver_proposals_per_round: 40
+  solver_eval_epochs: 8             # screening only, never a deployment decision
+  solver_gmax: 11                   # maximum lineage depth within one window
+  solver_patience: 5                # quality rollback after this many non-improving generations
+  rollback_patience_rounds: 2       # rounds before the search tip returns to the champion
+  epoch_time_cap_s: 90              # reject structures slower than this per epoch
+  family_probe_n: 128               # windows per family in the search feedback
+  switch_audit: true                # compare the champion with the anchor when the branch closes
+
+  # Promotion gate: delta = 2 sigma_M, epsilon_worst = 3 sigma_W (duoevo.py calibrate)
+  gate_probe_n: 256
+  promotion:
+    delta_promote: 0.0283
+    epsilon_clean: 0.01
+    epsilon_worst: 0.0845
+    epsilon_family: 0.03
+
+# ClassBD + MART-LOAT baseline (baselines/run_mart_loat.py)
+mart_loat:
+  steps: 10                         # PGD steps
+  attack_snr_db: 20.0               # L2 radius relative to each input
+  beta: 6.0
+  theta: 0.1
+  gamma: 0.05

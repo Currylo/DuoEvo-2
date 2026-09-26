@@ -1,0 +1,20 @@
+# Wiring check on a small subset of CWRU: two rounds with tiny budgets.  Not a result.
+# Still calls the LLM endpoint (2 Challenger programs and 2 structure proposals per round).
+
+data:
+  dataset: cwru
+  root: data/CWRU
+  stride: 1024
+  cross_load: 3
+  max_windows_per_split: 200
+
+exp:
+  rounds: 2
+  challenger_oe_iters: 2
+  boot_epochs: 1
+  continue_epochs: 1
+  confirm_epochs: 2
+  solver_proposals_per_round: 2
+  solver_eval_epochs: 1
+  family_probe_n: 32
+  gate_probe_n: 32

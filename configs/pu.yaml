@@ -1,0 +1,21 @@
+# Paderborn University (PU) bearing data: healthy, inner-race and outer-race damage.
+# Recorded at 64 kHz; every operating condition has 20 measurement repetitions.
+
+data:
+  dataset: pu
+  root: data/PU
+  raw_rate_hz: 64000
+  stride: 1024
+  train_conditions: [N15_M07_F10, N15_M01_F10, N15_M07_F04]
+  cross_condition: N09_M07_F10       # held out, never used
+  train_reps: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+  dev_reps: [17, 18]
+  test_reps: [19, 20]
+  classes:
+    Healthy: [K001, K002, K003, K004, K005, K006]
+    InnerRace: [KI01, KI03, KI04, KI05, KI07, KI08]
+    OuterRace: [KA01, KA03, KA04, KA05, KA07, KA08]
+
+mart_loat:                           # selected on seed-11 validation
+  attack_snr_db: 26.0
+  beta: 1.0

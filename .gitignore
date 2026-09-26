@@ -1,0 +1,21 @@
+# data, third-party baselines and outputs
+data/
+third_party/
+runs/
+
+# checkpoints and arrays
+*.pt
+*.pth
+*.ckpt
+*.npz
+*.npy
+
+# environment
+.env
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.vscode/
+.idea/
+.DS_Store
